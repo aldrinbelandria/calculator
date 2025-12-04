@@ -1,4 +1,4 @@
-name: APK Live Cam Fix XML
+name: APK Live Cam (Repo Config)
 
 on:
   push:
@@ -24,12 +24,12 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Instalar Cordova y Configurar
+    - name: Instalar Cordova y Construir
       run: |
         npm install -g cordova
         
-        # 1. Crear proyecto
-        cordova create app_temp com.usuario.livecam "Live Camera Pro"
+        # 1. Crear proyecto temporal
+        cordova create app_temp com.usuario.livecam "Live Cam Pro"
         cd app_temp
         
         # 2. Instalar Plugins
@@ -37,35 +37,23 @@ jobs:
         cordova plugin add cordova-plugin-android-permissions
         cordova plugin add cordova-plugin-whitelist
 
-        # 3. Copiar HTML
+        # 3. REEMPLAZO DE ARCHIVOS
+        # Borramos lo que trae por defecto
+        rm config.xml
         rm -rf www/*
+        
+        # Copiamos TUS archivos del repositorio (están un nivel arriba ../)
+        cp ../config.xml .
         cp ../index.html www/
         
-        # 4. Agregar plataforma
+        # 4. Agregar plataforma (ahora leerá TU config.xml)
         cordova platform add android
-
-        # --- CORRECCIÓN CRÍTICA AQUÍ ---
-        # Primero: Agregamos el "Diccionario" (Namespace) de Android a la etiqueta <widget>
-        # Sin esto, el compilador no entiende qué es "android:name" y falla.
-        sed -i 's/<widget/<widget xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android"/g' config.xml
-
-        # Segundo: Ahora sí inyectamos los permisos y configuraciones
-        sed -i '/<\/widget>/i \
-        <preference name="AndroidLaunchMode" value="singleTop" /> \
-        <preference name="AllowInlineMediaPlayback" value="true" /> \
-        <preference name="MediaPlaybackRequiresUserAction" value="false" /> \
-        <preference name="BackgroundColor" value="0xff000000" /> \
-        <config-file parent="/*" target="AndroidManifest.xml"> \
-            <uses-permission android:name="android.permission.CAMERA" /> \
-            <uses-feature android:name="android.hardware.camera" /> \
-            <uses-feature android:name="android.hardware.camera.autofocus" /> \
-        </config-file>' config.xml
-
+        
         # 5. Compilar
         cordova build android --debug
 
     - name: Subir APK
       uses: actions/upload-artifact@v4
       with:
-        name: live-cam-fixed
+        name: live-cam-pro
         path: app_temp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
