@@ -1,9 +1,9 @@
-name: Construir APK Calculadora
+name: Construir APK Camara
 
 on:
   push:
-    branches: [ "main", "master" ] # Funciona si tu rama se llama main o master
-  workflow_dispatch: # Permite activar el botón manualmente si quieres
+    branches: [ "main", "master" ]
+  workflow_dispatch:
 
 jobs:
   build-android:
@@ -27,34 +27,39 @@ jobs:
       with:
         node-version: '18'
 
-    # 4. Magia de Cordova
-    - name: Instalar Cordova y Compilar
+    # 4. Magia de Cordova + PLUGINS
+    - name: Instalar Cordova, Plugins y Compilar
       run: |
         # Instalar Cordova globalmente
         npm install -g cordova
         
-        # Crear el proyecto base de Cordova
-        # com.usuario.calculadora = identificador único de la app
-        cordova create app_temp com.usuario.calculadora "Calculadora Simple"
+        # Crear el proyecto base
+        # He cambiado el nombre interno a "com.usuario.camara"
+        cordova create app_temp com.usuario.camara "Mi Camara App"
+        
+        # Entramos a la carpeta del proyecto
+        cd app_temp
+        
+        # --- PASO CLAVE: INSTALAR EL PLUGIN DE CÁMARA ---
+        echo "Instalando plugin de cámara..."
+        cordova plugin add cordova-plugin-camera
+        # -----------------------------------------------
         
         # Limpiar la carpeta www que crea Cordova por defecto
-        rm -rf app_temp/www/*
+        rm -rf www/*
         
-        # COPIAR tu index.html dentro de la carpeta www de la app
-        cp index.html app_temp/www/
-        
-        # Entrar a la carpeta del proyecto
-        cd app_temp
+        # COPIAR tu index.html (que está un nivel arriba) dentro de la carpeta www
+        cp ../index.html www/
         
         # Agregar la plataforma Android
         cordova platform add android
         
-        # Construir el APK (en modo debug para no pedir firmas digitales)
+        # Construir el APK
         cordova build android --debug
 
-    # 5. Subir el APK resultante para que lo puedas descargar
+    # 5. Subir el APK resultante
     - name: Subir APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: mi-calculadora-apk
+        name: camara-app-debug
         path: app_temp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
