@@ -2,141 +2,206 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- Permisos para video en vivo (blob/mediastream) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- CSP Permisivo para video local -->
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob: gap: content:;">
     
-    <title>Live Camera</title>
+    <title>Live Cam Pro</title>
     <style>
+        * { box-sizing: border-box; }
+        
         body {
             background-color: #000;
             margin: 0;
             height: 100vh;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             overflow: hidden;
         }
 
-        /* El contenedor del video ocupa toda la pantalla */
-        .camera-view {
-            flex: 1;
-            position: relative;
-            background-color: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* Contenedor del video */
+        .video-container {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
         }
 
-        /* ETIQUETA DE VIDEO: Aquí se verá la cámara real */
         video {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Llena la pantalla sin bordes negros */
-            transform: scaleX(1); /* Cambiar a -1 si usas cámara frontal (espejo) */
+            object-fit: cover; /* Llena toda la pantalla */
         }
 
-        /* Interfaz sobre el video (Botones flotantes) */
-        .overlay {
+        /* UI Superpuesta */
+        .ui-layer {
             position: absolute;
-            bottom: 30px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
             z-index: 10;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Permite tocar el video si fuera necesario */
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding-bottom: 50px;
         }
 
-        .btn-round {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            border: 4px solid white;
-            background-color: rgba(0,0,0,0.3);
+        /* Pantalla de Permisos / Inicio */
+        #start-screen {
+            position: absolute;
+            z-index: 20;
+            background-color: #000;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            transition: opacity 0.5s;
+        }
+
+        h1 { margin-bottom: 10px; font-weight: 300; letter-spacing: 2px; }
+        p { color: #888; margin-bottom: 30px; }
+
+        .btn-action {
+            background: white;
+            color: black;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             cursor: pointer;
+            box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            transition: transform 0.2s;
         }
         
-        .btn-round:active {
-            background-color: white;
+        .btn-action:active { transform: scale(0.95); }
+
+        /* Botón disparador falso (solo estética) */
+        .shutter {
+            width: 70px; height: 70px;
+            border: 4px solid white;
+            border-radius: 50%;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.2);
         }
 
-        .status-msg {
-            position: absolute;
-            top: 50%;
-            color: white;
-            font-family: sans-serif;
-            text-align: center;
-            width: 100%;
-            z-index: 5;
-        }
     </style>
 </head>
 <body>
 
-    <div class="camera-view">
-        <div id="msg" class="status-msg">Iniciando cámara...</div>
-        <!-- Playsinline es obligatorio para móviles -->
-        <video id="videoElement" autoplay playsinline></video>
-        
-        <div class="overlay">
-            <!-- Botón de ejemplo (podría ser para capturar frame) -->
-            <div class="btn-round" onclick="alert('¡Click!')"></div>
-        </div>
+    <!-- Pantalla de Inicio / Error -->
+    <div id="start-screen">
+        <h1>CÁMARA</h1>
+        <p id="status-text">Requiere acceso</p>
+        <button class="btn-action" onclick="iniciarApp()">INICIAR</button>
+    </div>
+
+    <!-- Video en Vivo -->
+    <div class="video-container">
+        <!-- 'muted' es CRUCIAL para que Android permita el autoplay -->
+        <video id="live-video" autoplay playsinline muted></video>
+    </div>
+
+    <!-- UI Decorativa -->
+    <div class="ui-layer">
+        <div class="shutter"></div>
     </div>
 
     <script src="cordova.js"></script>
     <script>
-        const msg = document.getElementById('msg');
-        
-        document.addEventListener('deviceready', function() {
-            console.log("Sistema listo, pidiendo permisos...");
-            pedirPermisos();
+        let appReady = false;
+
+        document.addEventListener('deviceready', () => {
+            appReady = true;
+            console.log("Sistema listo.");
+            // Intentar inicio automático si es posible
+            iniciarApp();
         }, false);
 
-        function pedirPermisos() {
-            // Usamos el plugin de permisos que instalamos en el YAML
-            var permissions = cordova.plugins.permissions;
+        function iniciarApp() {
+            const status = document.getElementById('status-text');
             
-            // Lista de permisos necesarios
-            var list = [
-                permissions.CAMERA,
-                permissions.RECORD_AUDIO // Opcional, quítalo si solo quieres video
-            ];
-        
-            permissions.checkPermission(list, function(status) {
-                if(status.hasPermission) {
-                    iniciarVideo();
+            if (!appReady) {
+                // Fallback para navegador web (PC)
+                if(navigator.mediaDevices) {
+                    startWebcam();
+                    return;
+                }
+                status.innerText = "Cargando sistema...";
+                return;
+            }
+
+            status.innerText = "Verificando permisos...";
+
+            // Plugin de permisos
+            const permissions = cordova.plugins.permissions;
+            const camPermission = permissions.CAMERA;
+
+            // Paso 1: Verificar si ya lo tenemos
+            permissions.checkPermission(camPermission, (s) => {
+                if (s.hasPermission) {
+                    startWebcam();
                 } else {
-                    permissions.requestPermissions(list, function(status) {
-                        if(status.hasPermission) iniciarVideo();
-                        else msg.innerText = "Permiso denegado 😢";
-                    }, function() {
-                        msg.innerText = "Error al pedir permisos";
+                    // Paso 2: Pedirlo
+                    permissions.requestPermission(camPermission, (s) => {
+                        if (s.hasPermission) {
+                            startWebcam();
+                        } else {
+                            status.innerText = "Permiso denegado. Toca Iniciar.";
+                            alert("La app necesita la cámara para funcionar.");
+                        }
+                    }, () => {
+                        status.innerText = "Error de permisos.";
                     });
                 }
+            }, () => {
+                status.innerText = "Error verificando.";
             });
         }
 
-        function iniciarVideo() {
-            // Configuración de la cámara
+        function startWebcam() {
+            const status = document.getElementById('status-text');
+            const screen = document.getElementById('start-screen');
+            
+            status.innerText = "Iniciando video...";
+
             const constraints = {
-                audio: false, // Pon true si quieres audio
+                audio: false, // ¡IMPORTANTE! Pedir audio a veces bloquea el video si no hay permiso
                 video: {
-                    facingMode: 'environment' // 'environment' = trasera, 'user' = frontal
+                    facingMode: 'environment', // Cámara trasera
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
                 }
             };
 
             navigator.mediaDevices.getUserMedia(constraints)
-                .then(function(stream) {
-                    msg.style.display = 'none'; // Ocultar texto
-                    const video = document.getElementById('videoElement');
+                .then((stream) => {
+                    const video = document.getElementById('live-video');
                     video.srcObject = stream;
-                    video.onloadedmetadata = function(e) {
-                        video.play();
-                    };
+                    
+                    // Ocultar pantalla de carga suavemente
+                    screen.style.opacity = '0';
+                    setTimeout(() => screen.style.display = 'none', 500);
                 })
-                .catch(function(err) {
-                    msg.innerText = "Error WebRTC: " + err.name;
-                    alert("Error: " + err.message);
+                .catch((err) => {
+                    console.error(err);
+                    status.innerText = "Error: " + err.name;
+                    // Si falla la trasera, intentar cualquiera
+                    if(constraints.video.facingMode) {
+                        delete constraints.video.facingMode;
+                        navigator.mediaDevices.getUserMedia({video: true, audio: false})
+                            .then(s => {
+                                document.getElementById('live-video').srcObject = s;
+                                screen.style.opacity = '0';
+                                setTimeout(() => screen.style.display = 'none', 500);
+                            });
+                    }
                 });
         }
     </script>
