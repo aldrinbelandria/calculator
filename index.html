@@ -1,9 +1,9 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- Meta para seguridad de contenido (necesaria para que la cámara muestre la imagen) -->
+    <!-- Política de seguridad ajustada para permitir la cámara y scripts -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *; img-src 'self' data: content:;">
     
     <title>Cámara Simple</title>
@@ -20,7 +20,6 @@
             color: white;
         }
 
-        /* El marco donde se verá la foto */
         #foto-marco {
             width: 90%;
             height: 60%;
@@ -32,21 +31,24 @@
             margin-bottom: 30px;
             overflow: hidden;
             border: 2px dashed #333;
+            position: relative;
         }
 
         #mi-imagen {
-            max-width: 100%;
-            max-height: 100%;
-            display: none; /* Oculta al principio */
-            border-radius: 18px;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Para que la foto se vea completa sin estirarse */
+            display: none;
+            z-index: 2;
         }
 
         .placeholder-text {
             color: #555;
             font-size: 1.2rem;
+            position: absolute;
+            z-index: 1;
         }
 
-        /* El botón disparador */
         .btn-camara {
             width: 80px;
             height: 80px;
@@ -56,6 +58,7 @@
             outline: 2px solid #fff;
             cursor: pointer;
             transition: transform 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .btn-camara:active {
@@ -68,7 +71,6 @@
             font-weight: 300;
             color: #aaa;
         }
-
     </style>
 </head>
 <body>
@@ -76,35 +78,50 @@
     <h2>Mi Cámara</h2>
 
     <div id="foto-marco">
-        <span class="placeholder-text" id="texto-aviso">Sin foto</span>
+        <span class="placeholder-text" id="texto-aviso">Toca el botón 👇</span>
         <img id="mi-imagen" src="" alt="Foto tomada">
     </div>
 
-    <!-- Botón estilo disparador -->
-    <button class="btn-camara" onclick="tomarFoto()"></button>
+    <button class="btn-camara" onclick="intentarTomarFoto()"></button>
+
+    <!-- IMPORTANTE: Este script conecta el HTML con el Hardware del teléfono -->
+    <script src="cordova.js"></script>
 
     <script>
-        // Esta función espera a que Cordova esté listo (importante para plugins)
-        document.addEventListener("deviceready", onDeviceReady, false);
+        let appLista = false;
 
-        function onDeviceReady() {
-            console.log("La cámara está lista para usarse");
+        // Esperamos a que Cordova cargue completamente
+        document.addEventListener("deviceready", function() {
+            appLista = true;
+            console.log("Sistema listo");
+        }, false);
+
+        function intentarTomarFoto() {
+            // 1. Verificamos si Cordova ha cargado
+            if (!appLista) {
+                alert("El sistema aún está cargando o no estás en la App.");
+                // Intentamos forzar la carga por si acaso
+                if(navigator.camera) tomarFoto();
+                return;
+            }
+
+            // 2. Ejecutamos la cámara
+            tomarFoto();
         }
 
         function tomarFoto() {
-            // Verificamos si existe el objeto navigator.camera
             if (!navigator.camera) {
-                alert("La cámara no funciona en el navegador de PC, solo en el celular.");
+                alert("Error: No se detecta el plugin de cámara. ¿Estás en el celular?");
                 return;
             }
 
             navigator.camera.getPicture(onSuccess, onFail, {
-                quality: 50, // Calidad de la foto (0 a 100)
-                destinationType: Camera.DestinationType.DATA_URL, // Nos devuelve la foto en código base64
+                quality: 50,
+                destinationType: Camera.DestinationType.DATA_URL,
                 encodingType: Camera.EncodingType.JPEG,
                 mediaType: Camera.MediaType.PICTURE,
-                correctOrientation: true, // Corrige si tomas la foto vertical
-                saveToPhotoAlbum: true // ¡Guarda la foto en tu galería!
+                correctOrientation: true,
+                saveToPhotoAlbum: false // Cambiado a false para probar compatibilidad
             });
         }
 
@@ -112,18 +129,14 @@
             var imagen = document.getElementById('mi-imagen');
             var texto = document.getElementById('texto-aviso');
 
-            // Mostramos la imagen
             imagen.style.display = 'block';
             texto.style.display = 'none';
-            
-            // Le asignamos el código de la foto
             imagen.src = "data:image/jpeg;base64," + imageData;
         }
 
         function onFail(message) {
-            // Si el usuario cancela o hay error
-            if (message !== 'Selection cancelled.' && message !== 'Camera cancelled.') {
-                alert('Error al tomar foto: ' + message);
+            if (message) {
+                alert('La cámara se cerró o falló: ' + message);
             }
         }
     </script>
