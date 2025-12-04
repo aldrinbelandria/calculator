@@ -1,4 +1,4 @@
-name: APK Live Cam Final
+name: APK Live Cam Fix XML
 
 on:
   push:
@@ -32,25 +32,24 @@ jobs:
         cordova create app_temp com.usuario.livecam "Live Camera Pro"
         cd app_temp
         
-        # 2. Instalar Plugins necesarios según documentación
-        # Plugin de cámara (necesario para inyectar permisos básicos)
+        # 2. Instalar Plugins
         cordova plugin add cordova-plugin-camera
-        # Plugin para gestión de permisos en tiempo real (Marshmallow+)
         cordova plugin add cordova-plugin-android-permissions
-        # Whitelist (seguridad de red)
         cordova plugin add cordova-plugin-whitelist
 
-        # 3. COPIAR tu HTML
+        # 3. Copiar HTML
         rm -rf www/*
         cp ../index.html www/
         
-        # 4. AGREGAR PLATAFORMA (Esto genera el config.xml base)
+        # 4. Agregar plataforma
         cordova platform add android
 
-        # 5. MODIFICACIÓN QUIRÚRGICA DEL CONFIG.XML (La clave del éxito)
-        # Esto permite que el video se reproduzca solo (Autoplay) y declara permisos
-        
-        # Inyectar preferencias de Webview
+        # --- CORRECCIÓN CRÍTICA AQUÍ ---
+        # Primero: Agregamos el "Diccionario" (Namespace) de Android a la etiqueta <widget>
+        # Sin esto, el compilador no entiende qué es "android:name" y falla.
+        sed -i 's/<widget/<widget xmlns:android="http:\/\/schemas.android.com\/apk\/res\/android"/g' config.xml
+
+        # Segundo: Ahora sí inyectamos los permisos y configuraciones
         sed -i '/<\/widget>/i \
         <preference name="AndroidLaunchMode" value="singleTop" /> \
         <preference name="AllowInlineMediaPlayback" value="true" /> \
@@ -62,11 +61,11 @@ jobs:
             <uses-feature android:name="android.hardware.camera.autofocus" /> \
         </config-file>' config.xml
 
-        # 6. COMPILAR
+        # 5. Compilar
         cordova build android --debug
 
     - name: Subir APK
       uses: actions/upload-artifact@v4
       with:
-        name: live-cam-final
+        name: live-cam-fixed
         path: app_temp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
