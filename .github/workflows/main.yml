@@ -1,0 +1,60 @@
+name: Construir APK Calculadora
+
+on:
+  push:
+    branches: [ "main", "master" ] # Funciona si tu rama se llama main o master
+  workflow_dispatch: # Permite activar el botón manualmente si quieres
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. Descarga tu código del repositorio
+    - name: Checkout del código
+      uses: actions/checkout@v4
+
+    # 2. Prepara Java (Necesario para Android)
+    - name: Configurar Java 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    # 3. Prepara Node.js (Necesario para Cordova)
+    - name: Configurar Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    # 4. Magia de Cordova
+    - name: Instalar Cordova y Compilar
+      run: |
+        # Instalar Cordova globalmente
+        npm install -g cordova
+        
+        # Crear el proyecto base de Cordova
+        # com.usuario.calculadora = identificador único de la app
+        cordova create app_temp com.usuario.calculadora "Calculadora Simple"
+        
+        # Limpiar la carpeta www que crea Cordova por defecto
+        rm -rf app_temp/www/*
+        
+        # COPIAR tu index.html dentro de la carpeta www de la app
+        cp index.html app_temp/www/
+        
+        # Entrar a la carpeta del proyecto
+        cd app_temp
+        
+        # Agregar la plataforma Android
+        cordova platform add android
+        
+        # Construir el APK (en modo debug para no pedir firmas digitales)
+        cordova build android --debug
+
+    # 5. Subir el APK resultante para que lo puedas descargar
+    - name: Subir APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: mi-calculadora-apk
+        path: app_temp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
