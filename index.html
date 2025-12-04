@@ -3,142 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <!-- Política de seguridad ajustada para permitir la cámara y scripts -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *; img-src 'self' data: content:;">
+    <!-- Política de Seguridad Permisiva para desarrollo -->
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: gap: content:">
     
-    <title>Cámara Simple</title>
+    <title>Cámara Debug</title>
     <style>
         body {
-            background-color: #000000;
-            height: 100vh;
-            margin: 0;
+            background-color: #121212;
+            color: white;
+            font-family: monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            font-family: sans-serif;
-            color: white;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
-        #foto-marco {
-            width: 90%;
-            height: 60%;
-            background-color: #1c1e26;
-            border-radius: 20px;
+        h2 { margin-top: 0; }
+
+        #marco-foto {
+            width: 100%;
+            height: 50%;
+            background-color: #1e1e1e;
+            border: 2px dashed #444;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             overflow: hidden;
-            border: 2px dashed #333;
-            position: relative;
         }
 
         #mi-imagen {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Para que la foto se vea completa sin estirarse */
+            max-width: 100%;
+            max-height: 100%;
             display: none;
-            z-index: 2;
         }
 
-        .placeholder-text {
-            color: #555;
+        #btn-foto {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 15px 30px;
             font-size: 1.2rem;
-            position: absolute;
-            z-index: 1;
-        }
-
-        .btn-camara {
-            width: 80px;
-            height: 80px;
-            background-color: #ffffff;
-            border-radius: 50%;
-            border: 4px solid #333;
-            outline: 2px solid #fff;
+            border-radius: 50px;
+            width: 100%;
+            max-width: 300px;
             cursor: pointer;
-            transition: transform 0.2s;
-            -webkit-tap-highlight-color: transparent;
+            /* Deshabilitado hasta que cargue cordova */
+            opacity: 0.5; 
+            pointer-events: none;
         }
 
-        .btn-camara:active {
-            transform: scale(0.9);
-            background-color: #ddd;
-        }
-
-        h2 {
-            margin-bottom: 20px;
-            font-weight: 300;
-            color: #aaa;
+        /* Consola visual para ver errores en el celular */
+        #consola-debug {
+            margin-top: 20px;
+            width: 100%;
+            height: 150px;
+            background-color: #000;
+            border: 1px solid #333;
+            padding: 10px;
+            overflow-y: scroll;
+            font-size: 0.8rem;
+            color: #0f0; /* Letras verdes tipo hacker */
+            text-align: left;
         }
     </style>
 </head>
 <body>
 
-    <h2>Mi Cámara</h2>
+    <h2>Prueba de Cámara</h2>
 
-    <div id="foto-marco">
-        <span class="placeholder-text" id="texto-aviso">Toca el botón 👇</span>
-        <img id="mi-imagen" src="" alt="Foto tomada">
+    <div id="marco-foto">
+        <span id="placeholder">La foto aparecerá aquí</span>
+        <img id="mi-imagen" src="" />
     </div>
 
-    <button class="btn-camara" onclick="intentarTomarFoto()"></button>
+    <button id="btn-foto">INICIANDO...</button>
 
-    <!-- IMPORTANTE: Este script conecta el HTML con el Hardware del teléfono -->
+    <!-- Área de logs para saber qué falla -->
+    <div id="consola-debug">Iniciando logs...<br></div>
+
+    <!-- Scripts -->
     <script src="cordova.js"></script>
-
     <script>
-        let appLista = false;
-
-        // Esperamos a que Cordova cargue completamente
-        document.addEventListener("deviceready", function() {
-            appLista = true;
-            console.log("Sistema listo");
-        }, false);
-
-        function intentarTomarFoto() {
-            // 1. Verificamos si Cordova ha cargado
-            if (!appLista) {
-                alert("El sistema aún está cargando o no estás en la App.");
-                // Intentamos forzar la carga por si acaso
-                if(navigator.camera) tomarFoto();
-                return;
-            }
-
-            // 2. Ejecutamos la cámara
-            tomarFoto();
+        // Función para escribir en la pantallita negra de abajo
+        function log(msg) {
+            const consola = document.getElementById('consola-debug');
+            const linea = document.createElement('div');
+            linea.textContent = "> " + msg;
+            consola.appendChild(linea);
+            consola.scrollTop = consola.scrollHeight; // Auto scroll
         }
 
-        function tomarFoto() {
+        // Capturar errores globales de JavaScript
+        window.onerror = function(message, source, lineno, colno, error) {
+            log("ERROR CRÍTICO: " + message);
+        };
+
+        const btn = document.getElementById('btn-foto');
+        const img = document.getElementById('mi-imagen');
+        const placeholder = document.getElementById('placeholder');
+
+        // 1. Evento DeviceReady (Fundamental según tu documentación)
+        document.addEventListener('deviceready', function() {
+            log("✅ Cordova 'deviceready' disparado.");
+            
+            // Habilitar botón
+            btn.style.opacity = "1";
+            btn.style.pointerEvents = "auto";
+            btn.innerText = "TOMAR FOTO";
+            
+            // Comprobar plugin
+            if (navigator.camera) {
+                log("✅ Plugin navigator.camera DETECTADO.");
+            } else {
+                log("❌ ERROR: navigator.camera NO existe. ¿Se instaló el plugin?");
+                btn.style.backgroundColor = "red";
+                btn.innerText = "ERROR PLUGIN";
+            }
+
+        }, false);
+
+        // 2. Agregar evento Click (Mejor que onclick="")
+        btn.addEventListener('click', function() {
+            log("Botón presionado.");
+
             if (!navigator.camera) {
-                alert("Error: No se detecta el plugin de cámara. ¿Estás en el celular?");
+                log("❌ No puedo abrir cámara (Plugin no encontrado).");
                 return;
             }
 
-            navigator.camera.getPicture(onSuccess, onFail, {
+            log("Intentando abrir cámara...");
+
+            // Opciones estándar
+            const options = {
                 quality: 50,
-                destinationType: Camera.DestinationType.DATA_URL,
+                destinationType: Camera.DestinationType.DATA_URL, // Devuelve base64
                 encodingType: Camera.EncodingType.JPEG,
                 mediaType: Camera.MediaType.PICTURE,
                 correctOrientation: true,
-                saveToPhotoAlbum: false // Cambiado a false para probar compatibilidad
-            });
-        }
+                saveToPhotoAlbum: false
+            };
+
+            navigator.camera.getPicture(onSuccess, onFail, options);
+        });
 
         function onSuccess(imageData) {
-            var imagen = document.getElementById('mi-imagen');
-            var texto = document.getElementById('texto-aviso');
-
-            imagen.style.display = 'block';
-            texto.style.display = 'none';
-            imagen.src = "data:image/jpeg;base64," + imageData;
+            log("✅ ¡FOTO TOMADA CON ÉXITO!");
+            img.src = "data:image/jpeg;base64," + imageData;
+            img.style.display = "block";
+            placeholder.style.display = "none";
         }
 
         function onFail(message) {
-            if (message) {
-                alert('La cámara se cerró o falló: ' + message);
-            }
+            log("⚠️ Falló la cámara: " + message);
         }
+
+        log("Esperando a Cordova...");
     </script>
 </body>
 </html>
