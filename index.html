@@ -1,256 +1,129 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <!-- Meta para seguridad de contenido (necesaria para que la cámara muestre la imagen) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: gap: https://ssl.gstatic.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; media-src *; img-src 'self' data: content:;">
     
-    <!-- ESTO CAMBIA EL COLOR DE LA BARRA DE NOTIFICACIONES (Android Chrome/Webview) -->
-    <meta name="theme-color" content="#17181f">
-    
-    <title>Calculadora Pro</title>
+    <title>Cámara Simple</title>
     <style>
-        /* RESET BÁSICO */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Roboto', 'Segoe UI', sans-serif;
-            -webkit-tap-highlight-color: transparent; /* Quita el flash azul al tocar */
-        }
-
         body {
-            background-color: #17181f; /* Color de fondo general (azul oscuro casi negro) */
-            height: 100vh; /* Ocupa el 100% de la altura */
+            background-color: #000000;
+            height: 100vh;
+            margin: 0;
             display: flex;
             flex-direction: column;
-            overflow: hidden; /* Sin scroll */
-        }
-
-        /* 1. SECCIÓN DE PANTALLA (Arriba) */
-        .display-container {
-            flex: 1; /* Ocupa todo el espacio sobrante arriba */
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-end; /* Alinea el texto al fondo */
-            align-items: flex-end; /* Alinea a la derecha */
-            padding: 20px 25px;
-            background-color: #17181f;
+            align-items: center;
+            justify-content: center;
+            font-family: sans-serif;
             color: white;
-            word-break: break-all;
-            word-wrap: break-word;
         }
 
-        /* Texto de la operación (historial pequeño) */
-        #historial {
-            font-size: 1.8rem;
-            color: #7d8296; /* Gris azulado */
-            margin-bottom: 10px;
-            min-height: 30px;
-        }
-
-        /* Texto del resultado (grande) */
-        #resultado {
-            font-size: 4rem;
-            font-weight: 300;
-        }
-
-        /* 2. SECCIÓN DE BOTONES (Abajo) */
-        .teclado {
-            height: 65%; /* Los botones ocupan el 65% de la pantalla aprox */
-            background-color: #1c1e26; /* Un poco más claro que el fondo */
-            border-top-left-radius: 30px;
-            border-top-right-radius: 30px;
-            padding: 20px;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr); /* 4 Columnas */
-            grid-template-rows: repeat(5, 1fr);    /* 5 Filas */
-            gap: 15px; /* Espacio entre botones */
-            box-shadow: 0px -5px 20px rgba(0,0,0,0.3);
-        }
-
-        button {
-            border: none;
-            border-radius: 18px;
-            font-size: 1.6rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: transform 0.1s, opacity 0.2s;
+        /* El marco donde se verá la foto */
+        #foto-marco {
+            width: 90%;
+            height: 60%;
+            background-color: #1c1e26;
+            border-radius: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
-            outline: none;
+            margin-bottom: 30px;
+            overflow: hidden;
+            border: 2px dashed #333;
         }
 
-        button:active {
-            transform: scale(0.95); /* Efecto de presionar */
-            opacity: 0.8;
+        #mi-imagen {
+            max-width: 100%;
+            max-height: 100%;
+            display: none; /* Oculta al principio */
+            border-radius: 18px;
         }
 
-        /* ESTILOS DE LOS BOTONES SEGÚN TU IMAGEN */
-        
-        /* Números (Fondo oscuro) */
-        .btn-num {
-            background-color: #242733; 
-            color: #ffffff;
-        }
-
-        /* Operadores (Columna derecha - Azul/Violeta oscuro) */
-        .btn-op {
-            background-color: #313547;
-            color: #8da1ff; /* Azul claro texto */
-            font-size: 1.8rem;
-        }
-
-        /* Funciones especiales arriba (AC, DEL, %) - Azul/Gris */
-        .btn-func {
-            background-color: #313547;
-            color: #ffffff;
+        .placeholder-text {
+            color: #555;
             font-size: 1.2rem;
         }
 
-        /* Botón IGUAL (=) - El destacado (Azul claro / Lavanda) */
-        .btn-igual {
-            background-color: #aebbfd; /* Color lavanda de la imagen */
-            color: #000000;
-            font-size: 2rem;
-            /* grid-column: span 2;  <-- Si quisieras que ocupe 2 espacios, descomenta esto */
+        /* El botón disparador */
+        .btn-camara {
+            width: 80px;
+            height: 80px;
+            background-color: #ffffff;
+            border-radius: 50%;
+            border: 4px solid #333;
+            outline: 2px solid #fff;
+            cursor: pointer;
+            transition: transform 0.2s;
         }
-        
-        /* Ajuste para pantallas muy pequeñas */
-        @media (max-height: 600px) {
-            #resultado { font-size: 3rem; }
-            .teclado { gap: 8px; padding: 10px; }
+
+        .btn-camara:active {
+            transform: scale(0.9);
+            background-color: #ddd;
+        }
+
+        h2 {
+            margin-bottom: 20px;
+            font-weight: 300;
+            color: #aaa;
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Pantalla -->
-    <div class="display-container">
-        <div id="historial"></div>
-        <div id="resultado">0</div>
+    <h2>Mi Cámara</h2>
+
+    <div id="foto-marco">
+        <span class="placeholder-text" id="texto-aviso">Sin foto</span>
+        <img id="mi-imagen" src="" alt="Foto tomada">
     </div>
 
-    <!-- Botones -->
-    <div class="teclado">
-        <!-- Fila 1 -->
-        <button class="btn-func" onclick="limpiarTodo()">AC</button>
-        <button class="btn-func" onclick="borrarUltimo()">⌫</button>
-        <button class="btn-func" onclick="agregarOperador('%')">%</button>
-        <button class="btn-op" onclick="agregarOperador('/')">÷</button>
-
-        <!-- Fila 2 -->
-        <button class="btn-num" onclick="agregarNumero('7')">7</button>
-        <button class="btn-num" onclick="agregarNumero('8')">8</button>
-        <button class="btn-num" onclick="agregarNumero('9')">9</button>
-        <button class="btn-op" onclick="agregarOperador('*')">×</button>
-
-        <!-- Fila 3 -->
-        <button class="btn-num" onclick="agregarNumero('4')">4</button>
-        <button class="btn-num" onclick="agregarNumero('5')">5</button>
-        <button class="btn-num" onclick="agregarNumero('6')">6</button>
-        <button class="btn-op" onclick="agregarOperador('-')">−</button>
-
-        <!-- Fila 4 -->
-        <button class="btn-num" onclick="agregarNumero('1')">1</button>
-        <button class="btn-num" onclick="agregarNumero('2')">2</button>
-        <button class="btn-num" onclick="agregarNumero('3')">3</button>
-        <button class="btn-op" onclick="agregarOperador('+')">+</button>
-
-        <!-- Fila 5 -->
-        <button class="btn-num" onclick="agregarNumero('00')">00</button>
-        <button class="btn-num" onclick="agregarNumero('0')">0</button>
-        <button class="btn-num" onclick="agregarNumero('.')">.</button>
-        <button class="btn-igual" onclick="calcular()">=</button>
-    </div>
+    <!-- Botón estilo disparador -->
+    <button class="btn-camara" onclick="tomarFoto()"></button>
 
     <script>
-        const historialDiv = document.getElementById('historial');
-        const resultadoDiv = document.getElementById('resultado');
-        
-        let operacionActual = ''; // Lo que se calcula internamente
-        let operacionVisible = ''; // Lo que se ve en el historial
-        let reiniciaPantalla = false; // Bandera para saber si acabamos de calcular
+        // Esta función espera a que Cordova esté listo (importante para plugins)
+        document.addEventListener("deviceready", onDeviceReady, false);
 
-        // Actualizar lo que se ve en el número grande
-        function actualizarDisplay(valor) {
-            // Si el número es muy largo, bajamos la fuente
-            if (valor.length > 9) {
-                resultadoDiv.style.fontSize = "2.5rem";
-            } else {
-                resultadoDiv.style.fontSize = "4rem";
+        function onDeviceReady() {
+            console.log("La cámara está lista para usarse");
+        }
+
+        function tomarFoto() {
+            // Verificamos si existe el objeto navigator.camera
+            if (!navigator.camera) {
+                alert("La cámara no funciona en el navegador de PC, solo en el celular.");
+                return;
             }
-            resultadoDiv.innerText = valor;
+
+            navigator.camera.getPicture(onSuccess, onFail, {
+                quality: 50, // Calidad de la foto (0 a 100)
+                destinationType: Camera.DestinationType.DATA_URL, // Nos devuelve la foto en código base64
+                encodingType: Camera.EncodingType.JPEG,
+                mediaType: Camera.MediaType.PICTURE,
+                correctOrientation: true, // Corrige si tomas la foto vertical
+                saveToPhotoAlbum: true // ¡Guarda la foto en tu galería!
+            });
         }
 
-        function agregarNumero(num) {
-            if (resultadoDiv.innerText === '0' || reiniciaPantalla) {
-                resultadoDiv.innerText = num;
-                reiniciaPantalla = false;
-            } else {
-                resultadoDiv.innerText += num;
-            }
-        }
+        function onSuccess(imageData) {
+            var imagen = document.getElementById('mi-imagen');
+            var texto = document.getElementById('texto-aviso');
 
-        function agregarOperador(op) {
-            // Guardamos el número actual y el operador en el historial superior
-            const valorActual = resultadoDiv.innerText;
+            // Mostramos la imagen
+            imagen.style.display = 'block';
+            texto.style.display = 'none';
             
-            // Símbolos bonitos para la vista
-            let simbolo = op;
-            if(op === '*') simbolo = '×';
-            if(op === '/') simbolo = '÷';
-            
-            operacionActual += valorActual + op; 
-            operacionVisible += valorActual + ' ' + simbolo + ' ';
-            
-            historialDiv.innerText = operacionVisible;
-            reiniciaPantalla = true; // El próximo número limpiará la pantalla de abajo
+            // Le asignamos el código de la foto
+            imagen.src = "data:image/jpeg;base64," + imageData;
         }
 
-        function borrarUltimo() {
-            let texto = resultadoDiv.innerText;
-            if (texto.length > 1) {
-                resultadoDiv.innerText = texto.slice(0, -1);
-            } else {
-                resultadoDiv.innerText = '0';
-            }
-        }
-
-        function limpiarTodo() {
-            resultadoDiv.innerText = '0';
-            historialDiv.innerText = '';
-            operacionActual = '';
-            operacionVisible = '';
-        }
-
-        function calcular() {
-            try {
-                // Añadimos el último número escrito a la operación
-                let expresionFinal = operacionActual + resultadoDiv.innerText;
-                
-                // Evaluar (Cuidado: eval es poderoso pero peligroso en webs públicas, seguro en app local)
-                let resultado = eval(expresionFinal);
-
-                // Formatear si hay muchos decimales
-                if (!Number.isInteger(resultado)) {
-                    resultado = parseFloat(resultado.toFixed(4));
-                }
-
-                // Mostrar el historial completo arriba
-                historialDiv.innerText = operacionVisible + resultadoDiv.innerText + ' =';
-                
-                // Mostrar resultado abajo
-                actualizarDisplay(resultado.toString());
-                
-                // Resetear para seguir operando sobre el resultado
-                operacionActual = ''; 
-                operacionVisible = ''; 
-                reiniciaPantalla = true;
-                
-            } catch (e) {
-                resultadoDiv.innerText = "Error";
+        function onFail(message) {
+            // Si el usuario cancela o hay error
+            if (message !== 'Selection cancelled.' && message !== 'Camera cancelled.') {
+                alert('Error al tomar foto: ' + message);
             }
         }
     </script>
