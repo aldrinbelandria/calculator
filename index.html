@@ -2,231 +2,142 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <!-- Permisos para video en vivo (blob/mediastream) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob: gap: content:;">
     
-    <!-- CSP: Permisos abiertos para que se vean las imágenes en Base64 sin problemas -->
-    <meta http-equiv="Content-Security-Policy" content="default-src * gap:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'; img-src * data: content:;">
-
-    <title>Cámara Pro</title>
+    <title>Live Camera</title>
     <style>
-        /* RESET y BASE */
-        * {
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
         body {
-            background-color: #000000;
+            background-color: #000;
             margin: 0;
             height: 100vh;
             display: flex;
             flex-direction: column;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             overflow: hidden;
         }
 
-        /* 1. ÁREA DE VISUALIZACIÓN (Arriba) */
-        .visor-container {
-            flex: 1; /* Ocupa todo el espacio disponible */
+        /* El contenedor del video ocupa toda la pantalla */
+        .camera-view {
+            flex: 1;
+            position: relative;
+            background-color: #000;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
-            position: relative;
         }
 
-        /* Marco de la foto con esquinas redondeadas suaves */
-        #marco-foto {
+        /* ETIQUETA DE VIDEO: Aquí se verá la cámara real */
+        video {
             width: 100%;
             height: 100%;
-            border-radius: 24px;
-            background-color: #121212;
+            object-fit: cover; /* Llena la pantalla sin bordes negros */
+            transform: scaleX(1); /* Cambiar a -1 si usas cámara frontal (espejo) */
+        }
+
+        /* Interfaz sobre el video (Botones flotantes) */
+        .overlay {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
             display: flex;
             justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            border: 1px solid #333;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            position: relative;
-        }
-
-        /* La imagen final */
-        #mi-imagen {
-            width: 100%;
-            height: 100%;
-            object-fit: contain; /* Muestra la foto entera sin recortar */
-            display: none; /* Oculta al inicio */
+            gap: 20px;
             z-index: 10;
         }
 
-        /* Texto/Icono cuando no hay foto */
-        .empty-state {
-            color: #444;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 1;
+        .btn-round {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 4px solid white;
+            background-color: rgba(0,0,0,0.3);
+            cursor: pointer;
         }
         
-        /* Icono SVG simple de cámara */
-        .icon-camera {
-            width: 48px;
-            height: 48px;
-            fill: #333;
-            margin: 0 auto;
-        }
-
-        /* 2. BARRA DE CONTROLES (Abajo) */
-        .controles {
-            height: 140px; /* Altura fija abajo */
-            background: linear-gradient(to top, #000 80%, transparent);
-            display: flex;
-            justify-content: center; /* Centrar botón */
-            align-items: center;
-            padding-bottom: 20px;
-            position: relative;
-        }
-
-        /* BOTÓN OBTURADOR ESTILO PRO */
-        .shutter-btn {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background-color: transparent;
-            border: 4px solid white; /* Anillo exterior */
-            padding: 4px; /* Espacio entre anillo y botón */
-            cursor: pointer;
-            transition: transform 0.1s ease;
-            position: relative;
-        }
-
-        /* El círculo blanco interior */
-        .shutter-inner {
-            width: 100%;
-            height: 100%;
+        .btn-round:active {
             background-color: white;
-            border-radius: 50%;
-            transition: background-color 0.2s;
         }
 
-        /* Efecto al presionar */
-        .shutter-btn:active {
-            transform: scale(0.9);
-            opacity: 0.8;
-        }
-        
-        /* Estado deshabilitado (cargando) */
-        .shutter-btn.disabled {
-            opacity: 0.3;
-            pointer-events: none;
-        }
-
-        /* Botón pequeño de "Borrar/Reset" a la izquierda */
-        .btn-reset {
+        .status-msg {
             position: absolute;
-            left: 40px;
+            top: 50%;
             color: white;
-            font-size: 0.9rem;
-            opacity: 0; /* Oculto si no hay foto */
-            transition: opacity 0.3s;
-            cursor: pointer;
-            padding: 10px;
+            font-family: sans-serif;
+            text-align: center;
+            width: 100%;
+            z-index: 5;
         }
-
     </style>
 </head>
 <body>
 
-    <!-- Área donde se ve la foto -->
-    <div class="visor-container">
-        <div id="marco-foto">
-            <!-- Estado Vacío -->
-            <div class="empty-state" id="placeholder">
-                <svg class="icon-camera" viewBox="0 0 24 24">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                </svg>
-                <span style="font-size: 0.8rem; letter-spacing: 1px;">LISTO</span>
-            </div>
-            
-            <!-- La Foto -->
-            <img id="mi-imagen" src="" />
+    <div class="camera-view">
+        <div id="msg" class="status-msg">Iniciando cámara...</div>
+        <!-- Playsinline es obligatorio para móviles -->
+        <video id="videoElement" autoplay playsinline></video>
+        
+        <div class="overlay">
+            <!-- Botón de ejemplo (podría ser para capturar frame) -->
+            <div class="btn-round" onclick="alert('¡Click!')"></div>
         </div>
     </div>
 
-    <!-- Controles inferiores -->
-    <div class="controles">
-        <!-- Botón borrar (aparece tras tomar foto) -->
-        <div class="btn-reset" id="btn-borrar" onclick="borrarFoto()">BORRAR</div>
-
-        <!-- Botón Disparador -->
-        <div class="shutter-btn" id="btn-camara" onclick="tomarFoto()">
-            <div class="shutter-inner"></div>
-        </div>
-    </div>
-
-    <!-- CORDOVA -->
     <script src="cordova.js"></script>
     <script>
-        let appReady = false;
-
+        const msg = document.getElementById('msg');
+        
         document.addEventListener('deviceready', function() {
-            appReady = true;
-            console.log("Sistema listo");
+            console.log("Sistema listo, pidiendo permisos...");
+            pedirPermisos();
         }, false);
 
-        function tomarFoto() {
-            if (!appReady) {
-                // Pequeño hack por si carga lento
-                if(!navigator.camera) return alert("Cargando cámara...");
-            }
-
-            // Animación visual del botón (feedback)
-            const btnInner = document.querySelector('.shutter-inner');
-            btnInner.style.backgroundColor = "#ccc"; // Se pone gris un momento
-            setTimeout(() => btnInner.style.backgroundColor = "white", 200);
-
-            navigator.camera.getPicture(onSuccess, onFail, {
-                quality: 50,
-                destinationType: Camera.DestinationType.DATA_URL,
-                encodingType: Camera.EncodingType.JPEG,
-                mediaType: Camera.MediaType.PICTURE,
-                correctOrientation: true,
-                saveToPhotoAlbum: false
+        function pedirPermisos() {
+            // Usamos el plugin de permisos que instalamos en el YAML
+            var permissions = cordova.plugins.permissions;
+            
+            // Lista de permisos necesarios
+            var list = [
+                permissions.CAMERA,
+                permissions.RECORD_AUDIO // Opcional, quítalo si solo quieres video
+            ];
+        
+            permissions.checkPermission(list, function(status) {
+                if(status.hasPermission) {
+                    iniciarVideo();
+                } else {
+                    permissions.requestPermissions(list, function(status) {
+                        if(status.hasPermission) iniciarVideo();
+                        else msg.innerText = "Permiso denegado 😢";
+                    }, function() {
+                        msg.innerText = "Error al pedir permisos";
+                    });
+                }
             });
         }
 
-        function onSuccess(imageData) {
-            const img = document.getElementById('mi-imagen');
-            const placeholder = document.getElementById('placeholder');
-            const btnBorrar = document.getElementById('btn-borrar');
+        function iniciarVideo() {
+            // Configuración de la cámara
+            const constraints = {
+                audio: false, // Pon true si quieres audio
+                video: {
+                    facingMode: 'environment' // 'environment' = trasera, 'user' = frontal
+                }
+            };
 
-            // Asignar imagen
-            img.src = "data:image/jpeg;base64," + imageData;
-            
-            // Cambios de interfaz
-            img.style.display = "block";
-            placeholder.style.display = "none";
-            btnBorrar.style.opacity = "1"; // Mostrar botón borrar
-        }
-
-        function onFail(message) {
-            if (message === 'Selection cancelled.' || message === 'Camera cancelled.') {
-                return; // No hacer nada si el usuario canceló
-            }
-            alert('Error: ' + message);
-        }
-
-        function borrarFoto() {
-            const img = document.getElementById('mi-imagen');
-            const placeholder = document.getElementById('placeholder');
-            const btnBorrar = document.getElementById('btn-borrar');
-
-            img.src = "";
-            img.style.display = "none";
-            placeholder.style.display = "flex";
-            btnBorrar.style.opacity = "0";
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(function(stream) {
+                    msg.style.display = 'none'; // Ocultar texto
+                    const video = document.getElementById('videoElement');
+                    video.srcObject = stream;
+                    video.onloadedmetadata = function(e) {
+                        video.play();
+                    };
+                })
+                .catch(function(err) {
+                    msg.innerText = "Error WebRTC: " + err.name;
+                    alert("Error: " + err.message);
+                });
         }
     </script>
 </body>
