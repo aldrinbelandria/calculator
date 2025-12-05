@@ -1,4 +1,4 @@
-name: APK Live Cam (Repo Config)
+name: APK Live Cam Premium
 
 on:
   push:
@@ -28,32 +28,30 @@ jobs:
       run: |
         npm install -g cordova
         
-        # 1. Crear proyecto temporal
         cordova create app_temp com.usuario.livecam "Live Cam Pro"
         cd app_temp
         
-        # 2. Instalar Plugins
+        # --- PLUGINS ---
         cordova plugin add cordova-plugin-camera
         cordova plugin add cordova-plugin-android-permissions
-        cordova plugin add cordova-plugin-whitelist
+        
+        # Plugins para el Look & Feel (Barras de estado y navegación)
+        cordova plugin add cordova-plugin-statusbar
+        cordova plugin add cordova-plugin-navigationbar-color
 
-        # 3. REEMPLAZO DE ARCHIVOS
-        # Borramos lo que trae por defecto
+        # --- PREPARAR ARCHIVOS ---
         rm config.xml
         rm -rf www/*
         
-        # Copiamos TUS archivos del repositorio (están un nivel arriba ../)
         cp ../config.xml .
         cp ../index.html www/
         
-        # 4. Agregar plataforma (ahora leerá TU config.xml)
         cordova platform add android
         
-        # 5. Compilar
         cordova build android --debug
 
     - name: Subir APK
       uses: actions/upload-artifact@v4
       with:
-        name: live-cam-pro
+        name: live-cam-premium
         path: app_temp/platforms/android/app/build/outputs/apk/debug/app-debug.apk
