@@ -1,8 +1,40 @@
-<!-- PREFERENCIAS CRÍTICAS PARA VIDEO -->
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.usuario.livecam" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>Live Cam Pro</name>
+    <description>Aplicacion de Camara en Vivo</description>
+    <author email="dev@ejemplo.com" href="http://ejemplo.com">Developer</author>
+    
+    <!-- Punto de entrada -->
+    <content src="index.html" />
+    
+    <!-- Reglas de Red y Navegación -->
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="sms:*" />
+    <allow-intent href="mailto:*" />
+    <allow-intent href="geo:*" />
+    
+    <!-- PREFERENCIAS (Aquí estaba el error del color) -->
     <preference name="AndroidLaunchMode" value="singleTop" />
     <preference name="AllowInlineMediaPlayback" value="true" />
     <preference name="MediaPlaybackRequiresUserAction" value="false" />
-    <!-- CORRECCIÓN AQUÍ: Usar # en vez de 0x -->
-    <preference name="BackgroundColor" value="#000000" /> 
+    <preference name="BackgroundColor" value="#000000" />
     <preference name="AndroidInsecureFileModeEnabled" value="true" />
     <preference name="Orientation" value="portrait" />
+    <preference name="DisallowOverscroll" value="true" />
+
+    <!-- Configuración específica de ANDROID -->
+    <platform name="android">
+        <allow-intent href="market:*" />
+        
+        <!-- Inyección de Permisos en AndroidManifest.xml -->
+        <config-file parent="/manifest" target="AndroidManifest.xml">
+            <uses-permission android:name="android.permission.CAMERA" />
+            <uses-permission android:name="android.permission.RECORD_AUDIO" />
+            <uses-feature android:name="android.hardware.camera" />
+            <uses-feature android:name="android.hardware.camera.autofocus" />
+        </config-file>
+    </platform>
+</widget>
