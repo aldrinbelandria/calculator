@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- Permitir imágenes externas de Unsplash -->
+    <!-- CSP -->
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:;">
 
     <title>Infinity Gallery</title>
@@ -18,65 +18,58 @@
         }
 
         body {
-            background-color: #050505;
+            background-color: #000000; /* Negro puro de fondo */
             color: white;
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            /* Respetar el Notch del teléfono */
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* === HEADER FLOTANTE === */
+        /* === HEADER SÓLIDO NATIVO === */
         header {
             position: fixed;
             top: 0; left: 0; right: 0;
-            background: rgba(5, 5, 5, 0.8);
-            backdrop-filter: blur(15px);
-            z-index: 10;
+            background-color: #000000; /* Negro sólido para unirse con la barra de estado */
+            z-index: 100;
             padding: 15px 20px;
-            padding-top: calc(15px + env(safe-area-inset-top));
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid #222; /* Línea sutil separadora */
+            height: 60px; /* Altura fija estándar */
         }
 
         h1 {
-            font-size: 1.2rem;
-            font-weight: 700;
+            font-size: 1.3rem;
+            font-weight: 800;
             letter-spacing: 1px;
             margin: 0;
-            background: linear-gradient(90deg, #fff, #aaa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #ffffff;
         }
 
-        .subtitle { font-size: 0.8rem; color: #666; }
+        .subtitle { font-size: 0.75rem; color: #888; font-weight: 500; text-transform: uppercase; }
 
-        /* === GRILLA DE IMÁGENES (Masonry Style) === */
+        /* === GRILLA DE IMÁGENES === */
         .gallery-container {
-            padding: 80px 10px 20px 10px; /* Espacio para el header */
+            /* Empujamos el contenido para que no quede debajo del header */
+            padding: 70px 10px 20px 10px; 
             display: grid;
-            grid-template-columns: repeat(2, 1fr); /* 2 Columnas en móvil */
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
         }
 
         .img-card {
-            background-color: #1a1a1a;
-            border-radius: 16px;
+            background-color: #111;
+            border-radius: 12px;
             overflow: hidden;
             position: relative;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            transition: transform 0.2s;
-            aspect-ratio: 9/14; /* Formato vertical moderno */
+            aspect-ratio: 9/14;
             cursor: pointer;
-            opacity: 0; /* Para animación de entrada */
+            opacity: 0;
             animation: fadeIn 0.6s forwards;
         }
 
-        .img-card:active { transform: scale(0.96); }
+        .img-card:active { opacity: 0.7; }
 
         .img-card img {
             width: 100%;
@@ -85,58 +78,52 @@
             display: block;
         }
 
-        /* Gradiente sobre la imagen */
+        /* Gradiente sutil abajo */
         .card-overlay {
             position: absolute;
             bottom: 0; left: 0; width: 100%;
-            height: 40%;
-            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            height: 50%;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
             display: flex;
             align-items: flex-end;
-            padding: 15px;
+            padding: 12px;
         }
 
-        .card-info { font-size: 0.8rem; font-weight: 500; color: #ddd; }
+        .card-info { font-size: 0.75rem; font-weight: 600; color: #eee; letter-spacing: 0.5px; }
 
-        /* === LIGHTBOX (MODAL DE PANTALLA COMPLETA) === */
+        /* === LIGHTBOX === */
         #lightbox {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.95);
-            backdrop-filter: blur(5px);
-            z-index: 50;
-            display: none; /* Oculto por defecto */
-            flex-direction: column;
+            background-color: #000;
+            z-index: 200; /* Muy por encima */
+            display: none;
             justify-content: center;
             align-items: center;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.25s;
         }
 
         #lightbox-img {
             max-width: 100%;
-            max-height: 80%;
-            border-radius: 8px;
-            box-shadow: 0 0 30px rgba(255,255,255,0.1);
-            transform: scale(0.9);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 100%;
+            object-fit: contain;
         }
 
         .close-btn {
             position: absolute;
-            top: 40px; right: 20px;
+            top: 20px; right: 20px;
             width: 40px; height: 40px;
             background: rgba(255,255,255,0.1);
             border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            font-size: 1.5rem; color: white;
-            cursor: pointer;
+            font-size: 2rem; color: white;
+            z-index: 201;
         }
 
-        /* === ANIMACIONES === */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
 
     </style>
@@ -146,99 +133,102 @@
     <header>
         <div>
             <h1>UNSPLASH</h1>
-            <span class="subtitle">Curated Collection</span>
+            <span class="subtitle">Official Collection</span>
         </div>
-        <!-- Icono menú simulado -->
-        <div style="width: 24px; height: 2px; background: white; box-shadow: 0 6px 0 white;"></div>
+        <!-- Icono de menú hamburguesa simple -->
+        <div style="display:flex; flex-direction:column; gap:5px;">
+            <div style="width:24px; height:2px; background:white;"></div>
+            <div style="width:16px; height:2px; background:white; align-self:flex-end;"></div>
+        </div>
     </header>
 
-    <!-- Contenedor de la Galería -->
-    <div class="gallery-container" id="gallery">
-        <!-- Las imágenes se inyectan con JS aquí -->
-    </div>
+    <div class="gallery-container" id="gallery"></div>
 
-    <!-- Modal Lightbox -->
     <div id="lightbox" onclick="cerrarModal()">
         <div class="close-btn">&times;</div>
-        <img id="lightbox-img" src="" alt="Full view">
+        <img id="lightbox-img" src="" alt="View">
     </div>
 
+    <!-- SCRIPT CORDOVA -->
+    <script src="cordova.js"></script>
     <script>
-        // URLs base de Unsplash (Keywords para obtener fotos variadas)
-        const categories = ['architecture', 'nature', 'neon', 'cyberpunk', 'portrait', 'technology', 'minimalism', 'dark'];
+        // === PARTE CLAVE: ESTILO NATIVO ===
+        document.addEventListener('deviceready', () => {
+            if (window.StatusBar) {
+                // 1. Esto hace que la barra de estado NO se monte encima de tu web
+                StatusBar.overlaysWebView(false);
+                
+                // 2. Pintamos la barra de estado de NEGRO SÓLIDO
+                StatusBar.backgroundColorByHexString('#000000');
+                
+                // 3. Iconos blancos (hora, batería)
+                StatusBar.styleLightContent();
+            }
+            // Si usas barra de navegación, también negra
+            if (window.NavigationBar) {
+                window.NavigationBar.backgroundColorByHexString('#000000');
+            }
+        }, false);
+
+        // === LÓGICA DE GALERÍA ===
+        const categories = ['architecture', 'nature', 'cyberpunk', 'neon', 'black', 'tech'];
         const gallery = document.getElementById('gallery');
         const lightbox = document.getElementById('lightbox');
         const lightboxImg = document.getElementById('lightbox-img');
 
-        // Generar 20 imágenes dinámicas
         function cargarGaleria() {
-            categories.forEach((cat, index) => {
-                // Hacemos 3 pasadas para tener bastantes fotos
-                for(let i=0; i<3; i++) {
-                    crearTarjeta(cat, index * 3 + i);
-                }
-            });
+            let delay = 0;
+            // Generamos 18 imágenes
+            for(let i=0; i<18; i++) {
+                const cat = categories[i % categories.length];
+                crearTarjeta(cat, i);
+            }
         }
 
         function crearTarjeta(categoria, index) {
-            // URL aleatoria de Unsplash
-            // Agregamos 'random' y el índice para evitar caché y que salgan repetidas
-            const width = 400; 
-            const height = 600;
-            const imgUrl = `https://source.unsplash.com/random/${width}x${height}/?${categoria}&sig=${index}`;
-            // Nota: Unsplash source a veces es lento, si falla usaremos un placeholder, 
-            // pero para el ejemplo usamos un servicio rápido alternativo si source falla:
-            // Usaré picsum para garantizar velocidad en la demo si unsplash source da timeout,
-            // pero intentaré mantener la estética.
+            // Usamos Picsum para velocidad y estabilidad en demo
+            const imgUrl = `https://picsum.photos/400/600?random=${index + 100}`;
             
-            // URL Alternativa más estable para demos:
-            const stableUrl = `https://picsum.photos/${width}/${height}?random=${index}`;
-
             const card = document.createElement('div');
             card.className = 'img-card';
-            // Retraso escalonado para la animación (staggered animation)
+            // Animación en cascada
             card.style.animationDelay = `${index * 0.05}s`;
 
             card.innerHTML = `
-                <img src="${stableUrl}" loading="lazy" alt="${categoria}">
+                <img src="${imgUrl}" loading="lazy" alt="${categoria}">
                 <div class="card-overlay">
-                    <span class="card-info">${categoria.toUpperCase()} 0${index+1}</span>
+                    <span class="card-info">${categoria.toUpperCase()}</span>
                 </div>
             `;
 
-            // Evento Click
-            card.onclick = () => abrirModal(stableUrl);
-
+            card.onclick = () => abrirModal(imgUrl);
             gallery.appendChild(card);
         }
 
         function abrirModal(url) {
-            // Cambiar a resolución alta para el modal (truco de URL)
-            // En picsum cambiamos las dimensiones en el string
-            const highResUrl = url.replace('400/600', '1080/1920');
+            // Truco para pedir imagen en alta calidad
+            const highRes = url.replace('/400/600', '/1080/1920');
             
-            lightboxImg.src = highResUrl;
+            lightboxImg.src = highRes;
             lightbox.style.display = 'flex';
+            // Ocultar barra de estado al ver foto completa (Efecto inmersivo)
+            if(window.StatusBar) StatusBar.hide();
             
-            // Pequeño timeout para permitir que el display:flex se aplique antes de la opacidad
-            setTimeout(() => {
-                lightbox.style.opacity = '1';
-                lightboxImg.style.transform = 'scale(1)';
-            }, 10);
+            setTimeout(() => lightbox.style.opacity = '1', 10);
         }
 
         function cerrarModal() {
             lightbox.style.opacity = '0';
-            lightboxImg.style.transform = 'scale(0.9)';
+            // Mostrar barra de estado de nuevo
+            if(window.StatusBar) StatusBar.show();
+            
             setTimeout(() => {
                 lightbox.style.display = 'none';
-                lightboxImg.src = ''; // Limpiar para ahorrar memoria
-            }, 300);
+                lightboxImg.src = '';
+            }, 250);
         }
 
-        // Iniciar
         document.addEventListener('DOMContentLoaded', cargarGaleria);
-
     </script>
 </body>
 </html>
