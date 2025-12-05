@@ -2,27 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <!-- viewport-fit=cover es VITAL para usar el área de la barra de notificaciones -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- CSP Permisivo para video local -->
     <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob: gap: content:;">
-    
-    <title>Live Cam Pro</title>
+    <title>Cam Premium</title>
     <style>
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
         
         body {
             background-color: #000;
             margin: 0;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
-        /* Contenedor del video */
-        .video-container {
+        /* Video de fondo completo */
+        .video-wrapper {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
@@ -30,179 +26,234 @@
         }
 
         video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover; /* Llena toda la pantalla */
+            width: 100%; height: 100%;
+            object-fit: cover;
         }
 
-        /* UI Superpuesta */
+        /* Capa de Interfaz (Por encima del video) */
         .ui-layer {
             position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             z-index: 10;
-            width: 100%;
-            height: 100%;
-            pointer-events: none; /* Permite tocar el video si fuera necesario */
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
-            padding-bottom: 50px;
+            justify-content: space-between;
+            /* Respetar el área segura del notch/barra estado */
+            padding-top: env(safe-area-inset-top); 
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Pantalla de Permisos / Inicio */
-        #start-screen {
-            position: absolute;
-            z-index: 20;
-            background-color: #000;
-            width: 100%; height: 100%;
+        /* Header (opcional, para flash u opciones) */
+        .header-bar {
+            padding: 20px;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+        }
+        .pill-tag {
+            background: rgba(0,0,0,0.4);
+            color: rgba(255,255,255,0.8);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            backdrop-filter: blur(5px);
+        }
+
+        /* Panel Inferior de Controles (Glassmorphism) */
+        .controls-panel {
+            height: 180px;
+            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding-bottom: 20px;
+        }
+
+        /* Botón Disparador Premium */
+        .shutter-btn {
+            width: 76px; height: 76px;
+            border-radius: 50%;
+            border: 4px solid white;
+            padding: 3px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .shutter-inner {
+            width: 100%; height: 100%;
+            background-color: white;
+            border-radius: 50%;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        .shutter-btn:active .shutter-inner {
+            transform: scale(0.9);
+            background-color: #ddd;
+        }
+
+        /* Botones laterales (Cambiar cámara / Galería) */
+        .side-btn {
+            width: 50px; height: 50px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(10px);
+            display: flex;
             justify-content: center;
             align-items: center;
             color: white;
-            transition: opacity 0.5s;
-        }
-
-        h1 { margin-bottom: 10px; font-weight: 300; letter-spacing: 2px; }
-        p { color: #888; margin-bottom: 30px; }
-
-        .btn-action {
-            background: white;
-            color: black;
+            font-size: 1.2rem;
             border: none;
-            padding: 15px 40px;
-            border-radius: 30px;
-            font-size: 1rem;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(255,255,255,0.2);
-            transition: transform 0.2s;
         }
-        
-        .btn-action:active { transform: scale(0.95); }
+        .side-btn:active { background: rgba(255,255,255,0.3); }
 
-        /* Botón disparador falso (solo estética) */
-        .shutter {
-            width: 70px; height: 70px;
-            border: 4px solid white;
-            border-radius: 50%;
-            margin: 0 auto;
-            background: rgba(255,255,255,0.2);
+        /* Icono SVG Rotar */
+        .icon-svg { width: 24px; height: 24px; fill: white; }
+
+        /* Mensaje de Permisos */
+        #start-screen {
+            position: absolute; z-index: 20;
+            width: 100%; height: 100%;
+            background: #000;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; color: white;
+        }
+        .btn-start {
+            margin-top: 20px; padding: 15px 30px;
+            border-radius: 30px; border: none;
+            background: white; color: black; font-weight: bold;
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Pantalla de Inicio / Error -->
+    <!-- Pantalla de Inicio -->
     <div id="start-screen">
-        <h1>CÁMARA</h1>
-        <p id="status-text">Requiere acceso</p>
-        <button class="btn-action" onclick="iniciarApp()">INICIAR</button>
+        <h2>Cámara Pro</h2>
+        <button class="btn-start" onclick="checkPermissions()">INICIAR CÁMARA</button>
     </div>
 
-    <!-- Video en Vivo -->
-    <div class="video-container">
-        <!-- 'muted' es CRUCIAL para que Android permita el autoplay -->
+    <!-- Video -->
+    <div class="video-wrapper">
         <video id="live-video" autoplay playsinline muted></video>
     </div>
 
-    <!-- UI Decorativa -->
+    <!-- Interfaz -->
     <div class="ui-layer">
-        <div class="shutter"></div>
+        
+        <div class="header-bar">
+            <div class="pill-tag">LIVE 4K</div>
+        </div>
+
+        <div class="controls-panel">
+            <!-- Botón Galería (Decorativo) -->
+            <div class="side-btn">
+                <div style="width:20px; height:20px; background:#444; border-radius:4px;"></div>
+            </div>
+
+            <!-- Disparador -->
+            <div class="shutter-btn" onclick="takePhotoEffect()">
+                <div class="shutter-inner"></div>
+            </div>
+
+            <!-- Cambiar Cámara -->
+            <div class="side-btn" onclick="switchCamera()">
+                <!-- Icono de rotar -->
+                <svg class="icon-svg" viewBox="0 0 24 24">
+                    <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+                </svg>
+            </div>
+        </div>
     </div>
 
     <script src="cordova.js"></script>
     <script>
-        let appReady = false;
+        let currentFacingMode = 'environment'; // 'environment' = trasera, 'user' = frontal
+        let streamActive = null;
 
         document.addEventListener('deviceready', () => {
-            appReady = true;
-            console.log("Sistema listo.");
-            // Intentar inicio automático si es posible
-            iniciarApp();
+            // Ajustar StatusBar transparente
+            if(window.StatusBar) {
+                StatusBar.overlaysWebView(true);
+                StatusBar.styleLightContent();
+                StatusBar.backgroundColorByHexString("#00000000"); // Transparente
+            }
+            // Ajustar NavBar
+            if(window.NavigationBar) {
+                window.NavigationBar.backgroundColorByHexString('#000000');
+            }
+            // Intentar iniciar
+            checkPermissions();
         }, false);
 
-        function iniciarApp() {
-            const status = document.getElementById('status-text');
-            
-            if (!appReady) {
-                // Fallback para navegador web (PC)
-                if(navigator.mediaDevices) {
-                    startWebcam();
-                    return;
-                }
-                status.innerText = "Cargando sistema...";
-                return;
-            }
-
-            status.innerText = "Verificando permisos...";
-
-            // Plugin de permisos
-            const permissions = cordova.plugins.permissions;
-            const camPermission = permissions.CAMERA;
-
-            // Paso 1: Verificar si ya lo tenemos
-            permissions.checkPermission(camPermission, (s) => {
-                if (s.hasPermission) {
-                    startWebcam();
-                } else {
-                    // Paso 2: Pedirlo
-                    permissions.requestPermission(camPermission, (s) => {
-                        if (s.hasPermission) {
-                            startWebcam();
-                        } else {
-                            status.innerText = "Permiso denegado. Toca Iniciar.";
-                            alert("La app necesita la cámara para funcionar.");
-                        }
-                    }, () => {
-                        status.innerText = "Error de permisos.";
-                    });
-                }
-            }, () => {
-                status.innerText = "Error verificando.";
+        function checkPermissions() {
+            const perms = cordova.plugins.permissions;
+            perms.checkPermission(perms.CAMERA, (s) => {
+                if(s.hasPermission) startCamera();
+                else perms.requestPermission(perms.CAMERA, (s) => {
+                    if(s.hasPermission) startCamera();
+                });
             });
         }
 
-        function startWebcam() {
-            const status = document.getElementById('status-text');
-            const screen = document.getElementById('start-screen');
-            
-            status.innerText = "Iniciando video...";
+        function startCamera() {
+            // Detener stream anterior si existe
+            if(streamActive) {
+                streamActive.getTracks().forEach(track => track.stop());
+            }
 
             const constraints = {
-                audio: false, // ¡IMPORTANTE! Pedir audio a veces bloquea el video si no hay permiso
+                audio: false,
                 video: {
-                    facingMode: 'environment', // Cámara trasera
+                    facingMode: currentFacingMode,
                     width: { ideal: 1920 },
                     height: { ideal: 1080 }
                 }
             };
 
             navigator.mediaDevices.getUserMedia(constraints)
-                .then((stream) => {
-                    const video = document.getElementById('live-video');
-                    video.srcObject = stream;
-                    
-                    // Ocultar pantalla de carga suavemente
-                    screen.style.opacity = '0';
-                    setTimeout(() => screen.style.display = 'none', 500);
-                })
-                .catch((err) => {
-                    console.error(err);
-                    status.innerText = "Error: " + err.name;
-                    // Si falla la trasera, intentar cualquiera
-                    if(constraints.video.facingMode) {
-                        delete constraints.video.facingMode;
-                        navigator.mediaDevices.getUserMedia({video: true, audio: false})
-                            .then(s => {
-                                document.getElementById('live-video').srcObject = s;
-                                screen.style.opacity = '0';
-                                setTimeout(() => screen.style.display = 'none', 500);
-                            });
-                    }
-                });
+            .then(stream => {
+                streamActive = stream;
+                const video = document.getElementById('live-video');
+                video.srcObject = stream;
+                
+                // Efecto espejo si es frontal
+                if(currentFacingMode === 'user') {
+                    video.style.transform = 'scaleX(-1)';
+                } else {
+                    video.style.transform = 'scaleX(1)';
+                }
+
+                document.getElementById('start-screen').style.display = 'none';
+            })
+            .catch(err => console.error(err));
+        }
+
+        function switchCamera() {
+            currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+            startCamera();
+        }
+
+        function takePhotoEffect() {
+            // Efecto de flash visual
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = '0'; flash.style.left = '0';
+            flash.style.width = '100%'; flash.style.height = '100%';
+            flash.style.backgroundColor = 'white';
+            flash.style.zIndex = '50';
+            document.body.appendChild(flash);
+            
+            // Animación fade out
+            let op = 1;
+            const timer = setInterval(() => {
+                if (op <= 0.1) {
+                    clearInterval(timer);
+                    flash.remove();
+                }
+                flash.style.opacity = op;
+                op -= 0.1;
+            }, 20);
         }
     </script>
 </body>
