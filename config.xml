@@ -1,22 +1,25 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget id="com.usuario.livecam" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+<widget id="com.usuario.livecam" version="2.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:android="http://schemas.android.com/apk/res/android" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>Live Cam Pro</name>
-    <description>Aplicacion de Camara en Vivo</description>
+    <description>Cámara Premium</description>
     <author email="dev@ejemplo.com" href="http://ejemplo.com">Developer</author>
-    
-    <!-- Punto de entrada -->
     <content src="index.html" />
     
-    <!-- Reglas de Red y Navegación -->
     <access origin="*" />
-    <allow-intent href="http://*/*" />
-    <allow-intent href="https://*/*" />
-    <allow-intent href="tel:*" />
-    <allow-intent href="sms:*" />
-    <allow-intent href="mailto:*" />
-    <allow-intent href="geo:*" />
+    <allow-intent href="*" />
     
-    <!-- PREFERENCIAS (Aquí estaba el error del color) -->
+    <!-- === AJUSTES VISUALES PREMIUM === -->
+    
+    <!-- 1. Barra de Estado (Arriba): Transparente para que el video suba hasta el tope -->
+    <preference name="StatusBarOverlaysWebView" value="true" />
+    <preference name="StatusBarBackgroundColor" value="#00000000" /> <!-- Transparente -->
+    <preference name="StatusBarStyle" value="lightcontent" /> <!-- Texto blanco -->
+
+    <!-- 2. Barra de Navegación (Abajo): Negro Profundo -->
+    <preference name="NavigationBarBackgroundColor" value="#000000" />
+    <preference name="NavigationBarLight" value="false" />
+
+    <!-- 3. Comportamiento de App -->
     <preference name="AndroidLaunchMode" value="singleTop" />
     <preference name="AllowInlineMediaPlayback" value="true" />
     <preference name="MediaPlaybackRequiresUserAction" value="false" />
@@ -25,11 +28,7 @@
     <preference name="Orientation" value="portrait" />
     <preference name="DisallowOverscroll" value="true" />
 
-    <!-- Configuración específica de ANDROID -->
     <platform name="android">
-        <allow-intent href="market:*" />
-        
-        <!-- Inyección de Permisos en AndroidManifest.xml -->
         <config-file parent="/manifest" target="AndroidManifest.xml">
             <uses-permission android:name="android.permission.CAMERA" />
             <uses-permission android:name="android.permission.RECORD_AUDIO" />
