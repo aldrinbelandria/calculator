@@ -2,259 +2,243 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- viewport-fit=cover es VITAL para usar el área de la barra de notificaciones -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob: gap: content:;">
-    <title>Cam Premium</title>
+    
+    <!-- Permitir imágenes externas de Unsplash -->
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval'; img-src * data: blob:;">
+
+    <title>Infinity Gallery</title>
     <style>
-        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
-        
-        body {
-            background-color: #000;
-            margin: 0;
-            height: 100vh;
-            overflow: hidden;
+        /* === BASE === */
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
 
-        /* Video de fondo completo */
-        .video-wrapper {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 1;
-        }
-
-        video {
-            width: 100%; height: 100%;
-            object-fit: cover;
-        }
-
-        /* Capa de Interfaz (Por encima del video) */
-        .ui-layer {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            /* Respetar el área segura del notch/barra estado */
-            padding-top: env(safe-area-inset-top); 
+        body {
+            background-color: #050505;
+            color: white;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            /* Respetar el Notch del teléfono */
+            padding-top: env(safe-area-inset-top);
             padding-bottom: env(safe-area-inset-bottom);
         }
 
-        /* Header (opcional, para flash u opciones) */
-        .header-bar {
-            padding: 20px;
+        /* === HEADER FLOTANTE === */
+        header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: rgba(5, 5, 5, 0.8);
+            backdrop-filter: blur(15px);
+            z-index: 10;
+            padding: 15px 20px;
+            padding-top: calc(15px + env(safe-area-inset-top));
             display: flex;
-            justify-content: center;
-        }
-        .pill-tag {
-            background: rgba(0,0,0,0.4);
-            color: rgba(255,255,255,0.8);
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            backdrop-filter: blur(5px);
-        }
-
-        /* Panel Inferior de Controles (Glassmorphism) */
-        .controls-panel {
-            height: 180px;
-            background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
-            display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: space-around;
-            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* Botón Disparador Premium */
-        .shutter-btn {
-            width: 76px; height: 76px;
-            border-radius: 50%;
-            border: 4px solid white;
-            padding: 3px;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        
-        .shutter-inner {
-            width: 100%; height: 100%;
-            background-color: white;
-            border-radius: 50%;
-            transition: background-color 0.2s, transform 0.2s;
-        }
-
-        .shutter-btn:active .shutter-inner {
-            transform: scale(0.9);
-            background-color: #ddd;
-        }
-
-        /* Botones laterales (Cambiar cámara / Galería) */
-        .side-btn {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.15);
-            backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
+        h1 {
             font-size: 1.2rem;
-            border: none;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin: 0;
+            background: linear-gradient(90deg, #fff, #aaa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        .side-btn:active { background: rgba(255,255,255,0.3); }
 
-        /* Icono SVG Rotar */
-        .icon-svg { width: 24px; height: 24px; fill: white; }
+        .subtitle { font-size: 0.8rem; color: #666; }
 
-        /* Mensaje de Permisos */
-        #start-screen {
-            position: absolute; z-index: 20;
-            width: 100%; height: 100%;
-            background: #000;
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center; color: white;
+        /* === GRILLA DE IMÁGENES (Masonry Style) === */
+        .gallery-container {
+            padding: 80px 10px 20px 10px; /* Espacio para el header */
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 Columnas en móvil */
+            gap: 10px;
         }
-        .btn-start {
-            margin-top: 20px; padding: 15px 30px;
-            border-radius: 30px; border: none;
-            background: white; color: black; font-weight: bold;
+
+        .img-card {
+            background-color: #1a1a1a;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+            aspect-ratio: 9/14; /* Formato vertical moderno */
+            cursor: pointer;
+            opacity: 0; /* Para animación de entrada */
+            animation: fadeIn 0.6s forwards;
+        }
+
+        .img-card:active { transform: scale(0.96); }
+
+        .img-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* Gradiente sobre la imagen */
+        .card-overlay {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            height: 40%;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            display: flex;
+            align-items: flex-end;
+            padding: 15px;
+        }
+
+        .card-info { font-size: 0.8rem; font-weight: 500; color: #ddd; }
+
+        /* === LIGHTBOX (MODAL DE PANTALLA COMPLETA) === */
+        #lightbox {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.95);
+            backdrop-filter: blur(5px);
+            z-index: 50;
+            display: none; /* Oculto por defecto */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #lightbox-img {
+            max-width: 100%;
+            max-height: 80%;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(255,255,255,0.1);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 40px; right: 20px;
+            width: 40px; height: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; color: white;
+            cursor: pointer;
+        }
+
+        /* === ANIMACIONES === */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
     </style>
 </head>
 <body>
 
-    <!-- Pantalla de Inicio -->
-    <div id="start-screen">
-        <h2>Cámara Pro</h2>
-        <button class="btn-start" onclick="checkPermissions()">INICIAR CÁMARA</button>
-    </div>
-
-    <!-- Video -->
-    <div class="video-wrapper">
-        <video id="live-video" autoplay playsinline muted></video>
-    </div>
-
-    <!-- Interfaz -->
-    <div class="ui-layer">
-        
-        <div class="header-bar">
-            <div class="pill-tag">LIVE 4K</div>
+    <header>
+        <div>
+            <h1>UNSPLASH</h1>
+            <span class="subtitle">Curated Collection</span>
         </div>
+        <!-- Icono menú simulado -->
+        <div style="width: 24px; height: 2px; background: white; box-shadow: 0 6px 0 white;"></div>
+    </header>
 
-        <div class="controls-panel">
-            <!-- Botón Galería (Decorativo) -->
-            <div class="side-btn">
-                <div style="width:20px; height:20px; background:#444; border-radius:4px;"></div>
-            </div>
-
-            <!-- Disparador -->
-            <div class="shutter-btn" onclick="takePhotoEffect()">
-                <div class="shutter-inner"></div>
-            </div>
-
-            <!-- Cambiar Cámara -->
-            <div class="side-btn" onclick="switchCamera()">
-                <!-- Icono de rotar -->
-                <svg class="icon-svg" viewBox="0 0 24 24">
-                    <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
-                </svg>
-            </div>
-        </div>
+    <!-- Contenedor de la Galería -->
+    <div class="gallery-container" id="gallery">
+        <!-- Las imágenes se inyectan con JS aquí -->
     </div>
 
-    <script src="cordova.js"></script>
+    <!-- Modal Lightbox -->
+    <div id="lightbox" onclick="cerrarModal()">
+        <div class="close-btn">&times;</div>
+        <img id="lightbox-img" src="" alt="Full view">
+    </div>
+
     <script>
-        let currentFacingMode = 'environment'; // 'environment' = trasera, 'user' = frontal
-        let streamActive = null;
+        // URLs base de Unsplash (Keywords para obtener fotos variadas)
+        const categories = ['architecture', 'nature', 'neon', 'cyberpunk', 'portrait', 'technology', 'minimalism', 'dark'];
+        const gallery = document.getElementById('gallery');
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
 
-        document.addEventListener('deviceready', () => {
-            // Ajustar StatusBar transparente
-            if(window.StatusBar) {
-                StatusBar.overlaysWebView(true);
-                StatusBar.styleLightContent();
-                StatusBar.backgroundColorByHexString("#00000000"); // Transparente
-            }
-            // Ajustar NavBar
-            if(window.NavigationBar) {
-                window.NavigationBar.backgroundColorByHexString('#000000');
-            }
-            // Intentar iniciar
-            checkPermissions();
-        }, false);
-
-        function checkPermissions() {
-            const perms = cordova.plugins.permissions;
-            perms.checkPermission(perms.CAMERA, (s) => {
-                if(s.hasPermission) startCamera();
-                else perms.requestPermission(perms.CAMERA, (s) => {
-                    if(s.hasPermission) startCamera();
-                });
+        // Generar 20 imágenes dinámicas
+        function cargarGaleria() {
+            categories.forEach((cat, index) => {
+                // Hacemos 3 pasadas para tener bastantes fotos
+                for(let i=0; i<3; i++) {
+                    crearTarjeta(cat, index * 3 + i);
+                }
             });
         }
 
-        function startCamera() {
-            // Detener stream anterior si existe
-            if(streamActive) {
-                streamActive.getTracks().forEach(track => track.stop());
-            }
-
-            const constraints = {
-                audio: false,
-                video: {
-                    facingMode: currentFacingMode,
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
-                }
-            };
-
-            navigator.mediaDevices.getUserMedia(constraints)
-            .then(stream => {
-                streamActive = stream;
-                const video = document.getElementById('live-video');
-                video.srcObject = stream;
-                
-                // Efecto espejo si es frontal
-                if(currentFacingMode === 'user') {
-                    video.style.transform = 'scaleX(-1)';
-                } else {
-                    video.style.transform = 'scaleX(1)';
-                }
-
-                document.getElementById('start-screen').style.display = 'none';
-            })
-            .catch(err => console.error(err));
-        }
-
-        function switchCamera() {
-            currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
-            startCamera();
-        }
-
-        function takePhotoEffect() {
-            // Efecto de flash visual
-            const flash = document.createElement('div');
-            flash.style.position = 'fixed';
-            flash.style.top = '0'; flash.style.left = '0';
-            flash.style.width = '100%'; flash.style.height = '100%';
-            flash.style.backgroundColor = 'white';
-            flash.style.zIndex = '50';
-            document.body.appendChild(flash);
+        function crearTarjeta(categoria, index) {
+            // URL aleatoria de Unsplash
+            // Agregamos 'random' y el índice para evitar caché y que salgan repetidas
+            const width = 400; 
+            const height = 600;
+            const imgUrl = `https://source.unsplash.com/random/${width}x${height}/?${categoria}&sig=${index}`;
+            // Nota: Unsplash source a veces es lento, si falla usaremos un placeholder, 
+            // pero para el ejemplo usamos un servicio rápido alternativo si source falla:
+            // Usaré picsum para garantizar velocidad en la demo si unsplash source da timeout,
+            // pero intentaré mantener la estética.
             
-            // Animación fade out
-            let op = 1;
-            const timer = setInterval(() => {
-                if (op <= 0.1) {
-                    clearInterval(timer);
-                    flash.remove();
-                }
-                flash.style.opacity = op;
-                op -= 0.1;
-            }, 20);
+            // URL Alternativa más estable para demos:
+            const stableUrl = `https://picsum.photos/${width}/${height}?random=${index}`;
+
+            const card = document.createElement('div');
+            card.className = 'img-card';
+            // Retraso escalonado para la animación (staggered animation)
+            card.style.animationDelay = `${index * 0.05}s`;
+
+            card.innerHTML = `
+                <img src="${stableUrl}" loading="lazy" alt="${categoria}">
+                <div class="card-overlay">
+                    <span class="card-info">${categoria.toUpperCase()} 0${index+1}</span>
+                </div>
+            `;
+
+            // Evento Click
+            card.onclick = () => abrirModal(stableUrl);
+
+            gallery.appendChild(card);
         }
+
+        function abrirModal(url) {
+            // Cambiar a resolución alta para el modal (truco de URL)
+            // En picsum cambiamos las dimensiones en el string
+            const highResUrl = url.replace('400/600', '1080/1920');
+            
+            lightboxImg.src = highResUrl;
+            lightbox.style.display = 'flex';
+            
+            // Pequeño timeout para permitir que el display:flex se aplique antes de la opacidad
+            setTimeout(() => {
+                lightbox.style.opacity = '1';
+                lightboxImg.style.transform = 'scale(1)';
+            }, 10);
+        }
+
+        function cerrarModal() {
+            lightbox.style.opacity = '0';
+            lightboxImg.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                lightbox.style.display = 'none';
+                lightboxImg.src = ''; // Limpiar para ahorrar memoria
+            }, 300);
+        }
+
+        // Iniciar
+        document.addEventListener('DOMContentLoaded', cargarGaleria);
+
     </script>
 </body>
 </html>
